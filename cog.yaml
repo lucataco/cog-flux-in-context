@@ -2,12 +2,13 @@ build:
   gpu: true
   cuda: "12.1"
   python_version: "3.11"
-  python_packages: "requirements.txt"
+  python_requirements: "requirements.txt"
   
-  tests:
+  test:
     - inputs:
       logo_image: logo.png
-      logo_description: "a white logo on a black background"
-      destination_prompt: "a rainbow tie dye hat"
 
-predict: "predict.py:Predictor" 
+  # run:
+  #   - curl -o /usr/local/bin/pget -L "https://github.com/replicate/pget/releases/download/v0.8.2/pget_linux_x86_64" && chmod +x /usr/local/bin/pget
+
+predict: "predict.py:Predictor"

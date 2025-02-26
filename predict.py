@@ -10,12 +10,12 @@ MODEL_CACHE = "checkpoints"
 MODEL_URL = "https://weights.replicate.delivery/default/black-forest-labs/FLUX.1-dev/files.tar"
 LORA_URL = "https://weights.replicate.delivery/default/comfy-ui/loras/in_context_lora/visual-identity-design.safetensors.tar"
 
-def download_weights(url, dest, isFile=False):
-    start = time.time()
-    print("downloading url: ", url)
-    print("downloading to: ", dest)
-    subprocess.check_call(["pget", "-xf", url, dest], close_fds=False)
-    print("downloading took: ", time.time() - start)
+# def download_weights(url, dest, isFile=False):
+#     start = time.time()
+#     print("downloading url: ", url)
+#     print("downloading to: ", dest)
+#     subprocess.check_call(["pget", "-xf", url, dest], close_fds=False)
+#     print("downloading took: ", time.time() - start)
 
 class Predictor(BasePredictor):
     def setup(self):
@@ -23,22 +23,32 @@ class Predictor(BasePredictor):
         # make directory checkpoints if it doesn't exist
         if not os.path.exists(MODEL_CACHE):
             os.makedirs(MODEL_CACHE)
+
         # Download the weights
         print("Loading Flux Pipeline")
-        if not os.path.exists(MODEL_CACHE + "/FLUX.1-dev"):
-            download_weights(MODEL_URL, MODEL_CACHE)
+        # if not os.path.exists(MODEL_CACHE + "/FLUX.1-dev"):
+        #     download_weights(MODEL_URL, MODEL_CACHE)
         # Initialize the pipeline
-        self.pipe = FluxInpaintPipeline.from_pretrained(
-            MODEL_CACHE + "/FLUX.1-dev",
-            torch_dtype=torch.bfloat16
-        )
-        self.pipe.to("cuda")
-        if not os.path.exists(MODEL_CACHE + "/In-Context-LoRA"):
-            download_weights(LORA_URL, MODEL_CACHE+"/In-Context-LoRA")
-        self.pipe.load_lora_weights(
-            MODEL_CACHE + "/In-Context-LoRA",
-            weight_name="visual-identity-design.safetensors"
-        )
+        try:
+            self.pipe = FluxInpaintPipeline.from_pretrained(
+                MODEL_CACHE + "/FLUX.1-dev",
+                torch_dtype=torch.bfloat16
+            )
+            self.pipe.to("cuda")
+        except Exception as e:
+            print(f"Error - missing FLUX.1-dev model weights: {e}")
+            raise
+
+        # if not os.path.exists(MODEL_CACHE + "/In-Context-LoRA"):
+        #     download_weights(LORA_URL, MODEL_CACHE+"/In-Context-LoRA")
+        try:
+            self.pipe.load_lora_weights(
+                MODEL_CACHE + "/In-Context-LoRA",
+                weight_name="visual-identity-design.safetensors"
+            )
+        except Exception as e:
+            print(f"Error - missing In-Context-LoRA weights: {e}")
+            raise
 
     def square_center_crop(self, img, target_size=768):
         if img.mode in ('RGBA', 'P'):
